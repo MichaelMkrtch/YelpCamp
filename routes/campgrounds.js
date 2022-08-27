@@ -4,6 +4,7 @@ const catchAsync = require('../utilities/catchAsync');
 const { campgroundSchema } = require('../schemas.js');
 const ExpressError = require('../utilities/ExpressError');
 const Campground = require('../models/campground');
+const { ref } = require('joi');
 
 const validateCampground = (req, res, next) => {
   const { error } = campgroundSchema.validate(req.body);
@@ -34,6 +35,7 @@ router.post(
     // if (!req.body.campground) throw new ExpressError(400, 'Invalid Campground Data');
     const campground = new Campground(req.body.campground);
     await campground.save();
+    req.flash('success', 'Successfully created a new campground!');
     res.redirect(`/campgrounds/${campground._id}`);
   })
 );
@@ -43,6 +45,10 @@ router.get(
   catchAsync(async (req, res) => {
     const { id } = req.params;
     const campground = await Campground.findById(id).populate('reviews');
+    if (!campground) {
+      req.flash('error', 'Campground does not exist!');
+      return res.redirect('/campgrounds');
+    }
     res.render('campgrounds/show', { campground });
   })
 );
@@ -52,6 +58,10 @@ router.get(
   catchAsync(async (req, res) => {
     const { id } = req.params;
     const campground = await Campground.findById(id);
+    if (!campground) {
+      req.flash('error', 'Campground does not exist!');
+      return res.redirect('/campgrounds');
+    }
     res.render('campgrounds/edit', { campground });
   })
 );
@@ -62,6 +72,7 @@ router.put(
   catchAsync(async (req, res) => {
     const { id } = req.params;
     const campground = await Campground.findByIdAndUpdate(id, { ...req.body.campground });
+    req.flash('success', 'Successfully updated campground!');
     res.redirect(`/campgrounds/${campground._id}`);
   })
 );
@@ -71,6 +82,7 @@ router.delete(
   catchAsync(async (req, res) => {
     const { id } = req.params;
     await Campground.findByIdAndDelete(id);
+    req.flash('success', 'Successfully deleted campground');
     res.redirect('/campgrounds');
   })
 );
